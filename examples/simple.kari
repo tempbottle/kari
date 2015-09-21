@@ -4,7 +4,7 @@ def f(x) {
 
 let a := f(1)
 let b := a / 10
-let c := a * b + 1 / 2
+let c := "Hello, World"
 
 if a = b {
     let b := a
