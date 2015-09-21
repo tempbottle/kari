@@ -1,0 +1,15 @@
+[package]
+name = "kari"
+version = "0.1.0"
+authors = ["Benjamin Lee <benjamin.fik.lee@gmail.com>"]
+
+[dependencies]
+clap = "*"
+
+[lib]
+name = "kari"
+path = "src/kari/lib.rs"
+
+[[bin]]
+name = "solc"
+path = "src/karic/main.rs"
