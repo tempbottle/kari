@@ -5,9 +5,20 @@ Kari is a programming language designed to be embedded in Rust programs and the 
 ## Example
 It doesn't do much yet but here is a simple example:
 ```
-let a := 1 + 1
+def f(x) {
+    x + 1
+}
+
+let a := f(1)
 let b := a / 10
-let d := a = b
+let c := a * b + 1 / 2
+
+if a = b {
+    let b := a
+}
+else {
+    let b := c
+}
 ```
 
 ## Features

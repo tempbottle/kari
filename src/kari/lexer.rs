@@ -4,6 +4,15 @@ use position::*;
 #[derive(Clone, Debug)]
 pub enum Token {
     KeywordLet,
+    KeywordIf,
+    KeywordElse,
+    KeywordDef,
+    KeywordFn,
+    LBrace,
+    RBrace,
+    LParen,
+    RParen,
+    Comma,
     Colon,
     Equals,
     Plus,
@@ -30,6 +39,15 @@ impl fmt::Display for Token {
         use self::Token::*;
         match self {
             &KeywordLet => write!(f, "let"),
+            &KeywordIf => write!(f, "if"),
+            &KeywordElse => write!(f, "else"),
+            &KeywordDef => write!(f, "def"),
+            &KeywordFn => write!(f, "fn"),
+            &LBrace => write!(f, "lbrace"),
+            &RBrace => write!(f, "rbrace"),
+            &LParen => write!(f, "lparen"),
+            &RParen => write!(f, "rparen"),
+            &Comma => write!(f, "comma"),
             &Colon => write!(f, "colon"),
             &Equals => write!(f, "equals"),
             &Plus => write!(f, "plus"),
@@ -87,6 +105,21 @@ pub fn lex_source(source: String, file: Option<String>) -> Vec<TokenContainer> {
                 state = LexerState::Ident;
                 token.push(c);
             }
+            else if c == '{' {
+                tokens.push(PositionContainer(Token::LBrace, range.clone()));
+            }
+            else if c == '}' {
+                tokens.push(PositionContainer(Token::RBrace, range.clone()));
+            }
+            else if c == '(' {
+                tokens.push(PositionContainer(Token::LParen, range.clone()));
+            }
+            else if c == ')' {
+                tokens.push(PositionContainer(Token::RParen, range.clone()));
+            }
+            else if c == ',' {
+                tokens.push(PositionContainer(Token::Comma, range.clone()));
+            }
             else if c == '+' {
                 tokens.push(PositionContainer(Token::Plus, range.clone()));
             }
@@ -114,6 +147,18 @@ pub fn lex_source(source: String, file: Option<String>) -> Vec<TokenContainer> {
                 tokens.push(PositionContainer(
                     if &token[..] == "let" {
                         Token::KeywordLet
+                    }
+                    else if &token[..] == "if" {
+                        Token::KeywordIf
+                    }
+                    else if &token[..] == "else" {
+                        Token::KeywordElse
+                    }
+                    else if &token[..] == "def" {
+                        Token::KeywordDef
+                    }
+                    else if &token[..] == "fn" {
+                        Token::KeywordFn
                     }
                     else {
                         Token::Ident(token.clone())

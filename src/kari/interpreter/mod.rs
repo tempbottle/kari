@@ -50,15 +50,26 @@ impl Interpreter {
         self.variables.insert(id, val);
     }
 
+    fn jump(&mut self, id: BlockId) {
+        self.call_stack.push((self.current_block, self.instr_idx));
+        self.current_block = id;
+        self.instr_idx = 0;
+    }
+
     pub fn run_instr(&mut self) -> RuntimeResult<()> {
         match &self.blocks[&self.current_block].instrs[self.instr_idx].0 {
             &BytecodeInstr::Pop => {
                 try!(self.stack.pop());
             },
             &BytecodeInstr::Jump(id) => {
-                self.call_stack.push((self.current_block, self.instr_idx));
-                self.current_block = id;
-                self.instr_idx = 0;
+                self.jump(id);
+                return Ok(());
+            },
+            &BytecodeInstr::Call => {
+                match try!(self.stack.pop()) {
+                    Value::Function(id, _) => self.jump(id),
+                    _ => return Err(RuntimeError::TypeMismatch)
+                }
                 return Ok(());
             },
             &BytecodeInstr::Ret => {
@@ -73,6 +84,7 @@ impl Interpreter {
                 let val = try!(self.get_var(id)).clone();
                 self.stack.push(val);
             },
+            &BytecodeInstr::PushFunc(id, nargs) => self.stack.push(Value::Function(id, nargs)),
             &BytecodeInstr::SetVar(id) => {
                 let val = try!(self.stack.pop());
                 self.set_var(id, val);
@@ -101,6 +113,20 @@ impl Interpreter {
                 let lhs = try!(self.stack.pop());
                 let rhs = try!(self.stack.pop());
                 self.stack.push(Value::Boolean(lhs == rhs));
+            },
+            &BytecodeInstr::If(t, f) => {
+                let cond = match try!(self.stack.pop()) {
+                    Value::Boolean(cond) => cond,
+                    _ => return Err(RuntimeError::TypeMismatch)
+                };
+                if cond {
+                    self.jump(t);
+                    return Ok(());
+                }
+                else if let Some(f) = f {
+                    self.jump(f);
+                    return Ok(());
+                }
             }
         }
         self.instr_idx += 1;

@@ -7,6 +7,7 @@ pub enum Value {
     Nil,
     Integer(i32),
     Boolean(bool),
+    Function(BlockId, u32),
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -14,6 +15,7 @@ pub enum ValueType {
     Nil,
     Integer,
     Boolean,
+    Function,
 }
 
 impl Value {
@@ -23,6 +25,7 @@ impl Value {
             &Nil => ValueType::Nil,
             &Integer(_) => ValueType::Integer,
             &Boolean(_) => ValueType::Boolean,
+            &Function(_, _) => ValueType::Function,
         }
     }
 }

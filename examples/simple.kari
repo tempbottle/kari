@@ -1,4 +1,14 @@
-let a := 1 + 1
+def f(x) {
+    x + 1
+}
+
+let a := f(1)
 let b := a / 10
 let c := a * b + 1 / 2
-lte d := a = b
+
+if a = b {
+    let b := a
+}
+else {
+    let b := c
+}
