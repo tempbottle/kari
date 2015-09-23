@@ -3,6 +3,7 @@ use position::*;
 #[derive(Clone, Debug)]
 pub enum Expression {
     VarDeclaration(String, Box<ExpressionContainer>),
+    Assignment(Box<ExpressionContainer>, Box<ExpressionContainer>),
     FuncDefinition(Vec<String>, Vec<ExpressionContainer>),
     Variable(String),
     Integer(i32),
@@ -46,6 +47,8 @@ impl Expression {
                 out.push_str(&format!("{} [label=\"VarDeclaration({})\"];", id, var)[..]);
                 out.push_str(&format!("{} -> {};", id, rhs_id)[..]);
             },
+            &Assignment(ref lhs, ref rhs) =>
+                visualize_binop("Assignment", lhs, rhs, id, next_node, out),
             &FuncDefinition(ref args, ref body) => {
                 out.push_str(
                     &format!("{} [label=\"FuncDefinition({})\"];", id, args.join(","))[..]);

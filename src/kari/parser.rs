@@ -79,11 +79,11 @@ impl Parser {
     }
 
     fn parse_primary(&mut self) -> ParserResult {
-        expect!(self, "primary expression", {
+        let expr = expect!(self, "primary expression", {
             PositionContainer(Token::Ident(name), pos) =>
-                return Ok(PositionContainer(Expression::Variable(name), pos)),
+                PositionContainer(Expression::Variable(name), pos),
             PositionContainer(Token::Integer(x), pos) =>
-                return Ok(PositionContainer(Expression::Integer(x), pos)),
+                PositionContainer(Expression::Integer(x), pos),
             PositionContainer(Token::DQuote, pos) => {
                 let content = expect!(self, "string after quote", {
                     PositionContainer(Token::Str(s), _) => s
@@ -92,9 +92,17 @@ impl Parser {
                     PositionContainer(Token::DQuote, pos) => pos
                 });
                 let range = pos.extend_new(end.end);
-                return Ok(PositionContainer(Expression::Str(content), range));
+                PositionContainer(Expression::Str(content), range)
             }
         });
+        match self.lookahead() {
+            &Token::LParen => {
+                let (args, pos) = try!(self.parse_func_call_args());
+                let range = expr.1.clone().extend_new(pos.end);
+                Ok(PositionContainer(Expression::Call(Box::new(expr), args), range))
+            },
+            _ => Ok(expr)
+        }
     }
 
     fn parse_expression(&mut self) -> ParserResult {
@@ -118,10 +126,15 @@ impl Parser {
             }
         };
         match self.lookahead() {
-            &Token::LParen => {
-                let (args, pos) = try!(self.parse_func_call_args());
-                let range = expr.1.clone().extend_new(pos.end);
-                Ok(PositionContainer(Expression::Call(Box::new(expr), args), range))
+            &Token::Colon => {
+                //variable assignment
+                self.next();
+                expect!(self, "equals", {
+                    PositionContainer(Token::Equals, _) => ()
+                });
+                let rhs = try!(self.parse_expression());
+                let range = expr.1.clone().extend_new(rhs.1.end.clone());
+                Ok(PositionContainer(Expression::Assignment(Box::new(expr), Box::new(rhs)), range))
             },
             _ => Ok(expr)
         }
@@ -160,14 +173,19 @@ impl Parser {
         });
         //parse the argument list
         let mut args = Vec::new();
-        loop {
-            args.push(expect!(self, "identifier", {
-                PositionContainer(Token::Ident(ref name), _) => name.clone()
-            }));
-            expect!(self, "comma or close parenthesis", {
-                PositionContainer(Token::Comma, _) => (),
-                PositionContainer(Token::RParen, _) => break
-            });
+        match self.lookahead() {
+            &Token::RParen => {
+                self.next();
+            },
+            _ => loop {
+                args.push(expect!(self, "identifier", {
+                    PositionContainer(Token::Ident(ref name), _) => name.clone()
+                }));
+                expect!(self, "comma or close parenthesis", {
+                    PositionContainer(Token::Comma, _) => (),
+                    PositionContainer(Token::RParen, _) => break
+                });
+            }
         }
         let body = try!(self.parse_block());
         let range = start.extend_new(body.1.end.clone());
@@ -210,15 +228,20 @@ impl Parser {
         let tok = self.next(); //assume that this is '('
         let mut args = Vec::new();
         let pos: PositionRange;
-        loop {
-            args.push(try!(self.parse_expression()));
-            expect!(self, "comma or close parenthesis", {
-                PositionContainer(Token::Comma, _) => (),
-                PositionContainer(Token::RParen, pos2) => {
-                    pos = pos2;
-                    break;
-                }
-            });
+        match self.lookahead() {
+            &Token::RParen => {
+                pos = self.next().1;
+            },
+            _ => loop {
+                args.push(try!(self.parse_expression()));
+                expect!(self, "comma or close parenthesis", {
+                    PositionContainer(Token::Comma, _) => (),
+                    PositionContainer(Token::RParen, pos2) => {
+                        pos = pos2;
+                        break;
+                    }
+                });
+            }
         }
         Ok((args, tok.1.extend_new(pos.end)))
     }

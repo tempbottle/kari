@@ -1,0 +1,11 @@
+let a := 0
+
+def inc() {
+    a := a + 1
+}
+
+print(a)
+inc()
+print(a)
+inc()
+print(a)

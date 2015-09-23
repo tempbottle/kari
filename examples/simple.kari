@@ -1,20 +1,11 @@
-def f(x, y) {
-    if x = 0 {
-        x
+def factorial(x) {
+    if x = 1 {
+        1
     }
     else {
-        f(x - 1, y)
+        factorial(x - 1) * x
     }
 }
 
-let a := f(10, 10)
-let b := a / 10
-let c := "Hello, World"
-print("Hello, World")
-
-if a = b {
-    let b := a
-}
-else {
-    let b := c
-}
+let a := factorial(10)
+print(a)

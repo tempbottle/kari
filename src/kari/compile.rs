@@ -2,12 +2,7 @@ use position::*;
 use ast::{Expression, ExpressionContainer};
 use bytecode::{BlockId, BytecodeBlock, BytecodeInstr, BytecodeInstrContainer};
 
-#[derive(Clone, Debug)]
-pub enum CompileErrorType {
-    UnknownSymbol(String)
-}
-
-pub type CompileError = PositionContainer<CompileErrorType>;
+pub type CompileError = PositionContainer<String>;
 
 pub type CompileResult<T> = Result<T, CompileError>;
 
@@ -97,6 +92,17 @@ impl Compiler {
                     BytecodeInstr::DeclareVar(name.clone()), pos.clone()));
                 instrs.push(PositionContainer(BytecodeInstr::SetVar(name.clone()), pos.clone()));
                 instrs.push(PositionContainer(BytecodeInstr::PushNil, pos.clone()));
+            },
+            &PositionContainer(Expression::Assignment(ref lhs, ref rhs), ref pos) => {
+                match lhs.0 {
+                    Expression::Variable(ref name) => {
+                        try!(self.compile_expr(&**rhs, instrs, blocks));
+                        instrs.push(PositionContainer(
+                            BytecodeInstr::SetVar(name.clone()), pos.clone()));
+                        instrs.push(PositionContainer(BytecodeInstr::PushNil, pos.clone()));
+                    },
+                    _ => return Err(PositionContainer("expected rvalue".to_string(), pos.clone()))
+                }
             },
             &PositionContainer(Expression::If(ref cond, ref t, ref f), ref pos) => {
                 try!(self.compile_expr(&**cond, instrs, blocks));
