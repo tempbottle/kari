@@ -16,13 +16,15 @@ pub enum Token {
     RParen,
     DQuote,
     Comma,
+    Semicolon,
     Colon,
     Equals,
+    Less,
+    Greater,
     Plus,
     Minus,
     Star,
     Slash,
-    Newline,
     Eof,
     Str(String),
     Ident(String),
@@ -56,13 +58,15 @@ impl fmt::Display for Token {
             &RParen => write!(f, "rparen"),
             &DQuote => write!(f, "dquote"),
             &Comma => write!(f, "comma"),
+            &Semicolon => write!(f, "semicolon"),
             &Colon => write!(f, "colon"),
             &Equals => write!(f, "equals"),
+            &Less => write!(f, "less"),
+            &Greater => write!(f, "greater"),
             &Plus => write!(f, "plus"),
             &Minus => write!(f, "minus"),
             &Star => write!(f, "star"),
             &Slash => write!(f, "slash"),
-            &Newline => write!(f, "newline"),
             &Eof => write!(f, "EOF"),
             &Ident(ref name) => write!(f, "identifier({})", name),
             &Integer(x) => write!(f, "integer({})", x),
@@ -148,8 +152,17 @@ pub fn lex_source(source: String, file: Option<String>) -> Vec<TokenContainer> {
             else if c == '=' {
                 tokens.push(PositionContainer(Token::Equals, range.clone()));
             }
+            else if c == '<' {
+                tokens.push(PositionContainer(Token::Less, range.clone()));
+            }
+            else if c == '>' {
+                tokens.push(PositionContainer(Token::Greater, range.clone()));
+            }
             else if c == ':' {
                 tokens.push(PositionContainer(Token::Colon, range.clone()));
+            }
+            else if c == ';' {
+                tokens.push(PositionContainer(Token::Semicolon, range.clone()));
             },
 
             LexerState::Ident => if c.is_alphanumeric() {
@@ -208,12 +221,6 @@ pub fn lex_source(source: String, file: Option<String>) -> Vec<TokenContainer> {
             else {
                 token.push(c);
             }
-        }
-
-        if c == '\n' {
-            tokens.push(PositionContainer(
-                Token::Newline,
-                PositionRange::new(position.clone(), position.clone())));
         }
 
         if reset {

@@ -2,6 +2,7 @@ use position::*;
 
 #[derive(Clone, Debug)]
 pub enum Expression {
+    Statement(Box<ExpressionContainer>),
     VarDeclaration(String, Box<ExpressionContainer>),
     Assignment(Box<ExpressionContainer>, Box<ExpressionContainer>),
     FuncDefinition(Vec<String>, Vec<ExpressionContainer>),
@@ -15,6 +16,8 @@ pub enum Expression {
     Mul(Box<ExpressionContainer>, Box<ExpressionContainer>),
     Div(Box<ExpressionContainer>, Box<ExpressionContainer>),
     CompareEq(Box<ExpressionContainer>, Box<ExpressionContainer>),
+    CompareLt(Box<ExpressionContainer>, Box<ExpressionContainer>),
+    CompareGt(Box<ExpressionContainer>, Box<ExpressionContainer>),
     If(Box<ExpressionContainer>, Vec<ExpressionContainer>, Option<Vec<ExpressionContainer>>),
     Call(Box<ExpressionContainer>, Vec<ExpressionContainer>),
     Block(Vec<ExpressionContainer>),
@@ -44,6 +47,11 @@ impl Expression {
         let id = *next_node;
         *next_node += 1;
         match self {
+            &Statement(ref expr) => {
+                let expr_id = expr.0.visualize_dot_render_node(next_node, out);
+                out.push_str(&format!("{} [label=\"Statement\"];", id)[..]);
+                out.push_str(&format!("{} -> {};", id, expr_id)[..]);
+            },
             &VarDeclaration(ref var, ref rhs) => {
                 let rhs_id = rhs.0.visualize_dot_render_node(next_node, out);
                 out.push_str(&format!("{} [label=\"VarDeclaration({})\"];", id, var)[..]);
@@ -65,6 +73,10 @@ impl Expression {
             &Div(ref lhs, ref rhs) => visualize_binop("Div", lhs, rhs, id, next_node, out),
             &CompareEq(ref lhs, ref rhs) =>
                 visualize_binop("CompareEq", lhs, rhs, id, next_node, out),
+            &CompareLt(ref lhs, ref rhs) =>
+                visualize_binop("CompareLt", lhs, rhs, id, next_node, out),
+            &CompareGt(ref lhs, ref rhs) =>
+                visualize_binop("CompareGt", lhs, rhs, id, next_node, out),
             &If(ref expr, ref t, ref f) => {
                 out.push_str(&format!("{} [label=\"If\"];", id)[..]);
                 let expr_id = expr.0.visualize_dot_render_node(next_node, out);

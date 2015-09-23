@@ -1,0 +1,15 @@
+if 0 > 1 {
+    print("wrong");
+}
+
+if 1 > 0 {
+    print("right");
+}
+
+if 0 < 1 {
+    print("right");
+}
+
+if 1 < 0 {
+    print("wrong");
+}

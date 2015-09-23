@@ -1,9 +1,9 @@
-let a := 1
+let a := 1;
 
-let b := ref a
+let b := ref a;
 
-print(deref b)
+print(deref b);
 
-a := 2
+a := 2;
 
-print(deref b)
+print(deref b);

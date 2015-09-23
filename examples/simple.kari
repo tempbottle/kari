@@ -1,4 +1,4 @@
-def factorial(x) {
+def factorial1(x) {
     if x = 1 {
         1
     }
@@ -7,5 +7,14 @@ def factorial(x) {
     }
 }
 
-let a := factorial(10)
-print(a)
+def factorial2(x) {
+    let accum := 1
+    while x /= 1 {
+        accum := accum * x
+        x := x - 1
+    }
+    accum
+}
+
+print(factorial1(x))
+print(factorial2(x))

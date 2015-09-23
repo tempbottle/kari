@@ -24,7 +24,9 @@ pub enum BytecodeInstr {
     Sub,
     Mul,
     Div,
-    CmpEq
+    CmpEq,
+    CmpLt,
+    CmpGt,
 }
 
 #[derive(Clone, Debug)]
@@ -59,6 +61,8 @@ impl fmt::Display for BytecodeInstr {
             &Mul => write!(f, "MUL"),
             &Div => write!(f, "DIV"),
             &CmpEq => write!(f, "CMPEQ"),
+            &CmpLt => write!(f, "CMPLT"),
+            &CmpGt => write!(f, "CMPEQ"),
         }
     }
 }

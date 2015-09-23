@@ -6,6 +6,7 @@ mod builtins;
 use std::rc::Rc;
 use std::borrow::Borrow;
 use std::collections::HashMap;
+use std::cmp::Ordering;
 use self::runtime_err::*;
 use bytecode::{BlockId, BytecodeBlock, BytecodeInstr};
 use self::stack::Stack;
@@ -230,6 +231,16 @@ impl Interpreter {
                 let rhs = try!(self.stack.pop());
                 let lhs = try!(self.stack.pop());
                 self.stack.push(Value::Boolean(lhs == rhs));
+            },
+            BytecodeInstr::CmpLt => {
+                let rhs = try!(self.stack.pop());
+                let lhs = try!(self.stack.pop());
+                self.stack.push(Value::Boolean(try!(lhs.cmp(&rhs)) == Ordering::Less));
+            },
+            BytecodeInstr::CmpGt => {
+                let rhs = try!(self.stack.pop());
+                let lhs = try!(self.stack.pop());
+                self.stack.push(Value::Boolean(try!(lhs.cmp(&rhs)) == Ordering::Greater));
             },
             BytecodeInstr::If(t, f) => {
                 let cond = match try!(self.stack.pop()) {

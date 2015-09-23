@@ -23,11 +23,9 @@ impl Compiler {
                          instrs: &mut Vec<BytecodeInstrContainer>,
                          blocks: &mut Vec<BytecodeBlock>) -> CompileResult<()>
     {
-        for expr in exprs.split_last().unwrap().1.iter() {
+        for expr in exprs.iter() {
             try!(self.compile_expr(expr, instrs, blocks));
-            instrs.push(PositionContainer(BytecodeInstr::Pop, expr.1.clone()));
         }
-        try!(self.compile_expr(exprs.last().unwrap(), instrs, blocks));
         instrs.push(PositionContainer(BytecodeInstr::Ret, pos.clone()));
         Ok(())
     }
@@ -38,6 +36,10 @@ impl Compiler {
                         blocks: &mut Vec<BytecodeBlock>) -> CompileResult<()>
     {
         match expr {
+            &PositionContainer(Expression::Statement(ref expr), ref pos) => {
+                try!(self.compile_expr(&**expr, instrs, blocks));
+                instrs.push(PositionContainer(BytecodeInstr::Pop, pos.clone()));
+            },
             &PositionContainer(Expression::Variable(ref name), ref pos) =>
                 instrs.push(PositionContainer(BytecodeInstr::PushVar(name.clone()), pos.clone())),
             &PositionContainer(Expression::Integer(x), ref pos) =>
@@ -68,6 +70,16 @@ impl Compiler {
                 try!(self.compile_expr(&**lhs, instrs, blocks));
                 try!(self.compile_expr(&**rhs, instrs, blocks));
                 instrs.push(PositionContainer(BytecodeInstr::CmpEq, pos.clone()));
+            },
+            &PositionContainer(Expression::CompareLt(ref lhs, ref rhs), ref pos) => {
+                try!(self.compile_expr(&**lhs, instrs, blocks));
+                try!(self.compile_expr(&**rhs, instrs, blocks));
+                instrs.push(PositionContainer(BytecodeInstr::CmpLt, pos.clone()));
+            },
+            &PositionContainer(Expression::CompareGt(ref lhs, ref rhs), ref pos) => {
+                try!(self.compile_expr(&**lhs, instrs, blocks));
+                try!(self.compile_expr(&**rhs, instrs, blocks));
+                instrs.push(PositionContainer(BytecodeInstr::CmpGt, pos.clone()));
             },
             &PositionContainer(Expression::Reference(ref expr), ref pos) => {
                 match expr.0 {

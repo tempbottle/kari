@@ -44,13 +44,9 @@ impl Parser {
         let mut exprs = Vec::new();
         loop {
             match self.lookahead() {
-                &Token::Newline | &Token::Eof => (),
+                &Token::Eof => break,
                 _ => exprs.push(try!(self.parse_expression()))
             }
-            expect!(self, "EOF or newline", {
-                PositionContainer(Token::Eof, _) => break,
-                PositionContainer(Token::Newline, _) => ()
-            });
         }
 
         let range = self.tokens[0].1.clone().extend_new(self.tokens.last().unwrap().clone().1.end);
@@ -66,13 +62,8 @@ impl Parser {
                     self.next();
                     break;
                 },
-                &Token::Newline => (),
                 _ => exprs.push(try!(self.parse_expression()))
             }
-            expect!(self, "newline or '}'", {
-                PositionContainer(Token::RBrace, _) => break,
-                PositionContainer(Token::Newline, _) => ()
-            });
         }
         let range = tok.1.clone().extend_new(exprs.last().unwrap().clone().1.end);
         Ok((exprs, range))
@@ -136,10 +127,7 @@ impl Parser {
                 func.1 = tok.1.extend_new(func.1.end.clone());
                 func
             },
-            _ => {
-                let primary = try!(self.parse_primary());
-                try!(self.parse_binop_rhs(primary, 0))
-            }
+            _ => try!(self.parse_primary())
         };
         match self.lookahead() {
             &Token::Colon => {
@@ -152,7 +140,12 @@ impl Parser {
                 let range = expr.1.clone().extend_new(rhs.1.end.clone());
                 Ok(PositionContainer(Expression::Assignment(Box::new(expr), Box::new(rhs)), range))
             },
-            _ => Ok(expr)
+            &Token::Semicolon => {
+                let end = self.next().1;
+                let range = expr.1.clone().extend_new(end.end);
+                Ok(PositionContainer(Expression::Statement(Box::new(expr)), range))
+            },
+            _ => Ok(try!(self.parse_binop_rhs(expr, 0)))
         }
     }
 
@@ -211,17 +204,10 @@ impl Parser {
     fn parse_if_statement(&mut self) -> ParserResult {
         let tok = self.next(); //assume that this is 'if'
         let cond = try!(self.parse_expression());
-        //skip whitespace
-        while let &Token::Newline = self.lookahead() {
-            self.next();
-        }
         expect!(self, "block after if _", {
             PositionContainer(Token::LBrace, _) => ()
         });
         let t = try!(self.parse_block());
-        while let &Token::Newline = self.lookahead() {
-            self.next();
-        }
         let (f, range) = if let &Token::KeywordElse = self.lookahead() {
             self.next();
             expect!(self, "block after else", {
@@ -273,6 +259,8 @@ impl Parser {
                 &Token::Star => 4,
                 &Token::Slash => 4,
                 &Token::Equals => 1,
+                &Token::Less => 1,
+                &Token::Greater => 1,
                 _ => -1
             }
         }
@@ -287,6 +275,8 @@ impl Parser {
                 &Token::Star => Expression::Mul(lhs, rhs),
                 &Token::Slash => Expression::Div(lhs, rhs),
                 &Token::Equals => Expression::CompareEq(lhs, rhs),
+                &Token::Less => Expression::CompareLt(lhs, rhs),
+                &Token::Greater => Expression::CompareGt(lhs, rhs),
                 _ => unreachable!()
             }
         }

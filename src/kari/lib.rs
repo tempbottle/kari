@@ -1,4 +1,3 @@
-#![feature(slice_splits)]
 mod position;
 pub mod parser;
 pub mod lexer;

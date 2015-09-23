@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use std::fmt;
 use std::ops::{Add, Sub, Mul, Div};
-use std::cmp::{PartialEq, Eq};
+use std::cmp::{PartialEq, Eq, Ord, Ordering};
 use interpreter::{Interpreter, VarId};
 use interpreter::runtime_err::*;
 use bytecode::BlockId;
@@ -39,6 +39,17 @@ impl Value {
             &Ref(_) => ValueType::Ref,
             &Function(_, _) => ValueType::Function,
             &HostFunction(_) => ValueType::HostFunction,
+        }
+    }
+
+    pub fn cmp(&self, other: &Value) -> RuntimeResult<Ordering> {
+        use self::Value::*;
+        match self {
+            &Integer(a) => match other {
+                &Integer(b) => Ok(a.cmp(&b)),
+                _ => Err(RuntimeError::TypeMismatch)
+            },
+            _ => Err(RuntimeError::TypeMismatch)
         }
     }
 }
