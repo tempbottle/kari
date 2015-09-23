@@ -2,7 +2,7 @@ use std::rc::Rc;
 use std::fmt;
 use std::ops::{Add, Sub, Mul, Div};
 use std::cmp::{PartialEq, Eq};
-use interpreter::Interpreter;
+use interpreter::{Interpreter, VarId};
 use interpreter::runtime_err::*;
 use bytecode::BlockId;
 
@@ -12,6 +12,7 @@ pub enum Value {
     Integer(i32),
     Boolean(bool),
     Str(String),
+    Ref(VarId),
     Function(BlockId, u32),
     HostFunction(Rc<Fn(&mut Interpreter) -> RuntimeResult<()>>),
 }
@@ -23,6 +24,7 @@ pub enum ValueType {
     Boolean,
     Str,
     Function,
+    Ref,
     HostFunction,
 }
 
@@ -34,6 +36,7 @@ impl Value {
             &Integer(_) => ValueType::Integer,
             &Boolean(_) => ValueType::Boolean,
             &Str(_) => ValueType::Str,
+            &Ref(_) => ValueType::Ref,
             &Function(_, _) => ValueType::Function,
             &HostFunction(_) => ValueType::HostFunction,
         }
@@ -48,6 +51,7 @@ impl fmt::Display for Value {
             &Integer(x) => write!(f, "{}", x),
             &Boolean(b) => write!(f, "{}", b),
             &Str(ref s) => write!(f, "{}", s),
+            &Ref(VarId(id)) => write!(f, "ref({})", id),
             &Function(_, _) => write!(f, "<function>"),
             &HostFunction(_) => write!(f, "<hostfunction>"),
         }
@@ -72,6 +76,10 @@ impl PartialEq<Value> for Value {
             },
             &Str(ref a) => match other {
                 &Str(ref b) => a == b,
+                _ => false
+            },
+            &Ref(a) => match other {
+                &Ref(b) => a == b,
                 _ => false
             },
             &Function(ref a, _) => match other {

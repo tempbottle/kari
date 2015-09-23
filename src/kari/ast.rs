@@ -5,6 +5,8 @@ pub enum Expression {
     VarDeclaration(String, Box<ExpressionContainer>),
     Assignment(Box<ExpressionContainer>, Box<ExpressionContainer>),
     FuncDefinition(Vec<String>, Vec<ExpressionContainer>),
+    Reference(Box<ExpressionContainer>),
+    Dereference(Box<ExpressionContainer>),
     Variable(String),
     Integer(i32),
     Str(String),
@@ -105,6 +107,16 @@ impl Expression {
                     let expr_id = expr.0.visualize_dot_render_node(next_node, out);
                     out.push_str(&format!("{} -> {};", id, expr_id)[..]);
                 }
+            },
+            &Reference(ref expr) => {
+                out.push_str(&format!("{} [label=\"Reference\"];", id));
+                let expr_id = expr.0.visualize_dot_render_node(next_node, out);
+                out.push_str(&format!("{} -> {};", id, expr_id));
+            },
+            &Dereference(ref expr) => {
+                out.push_str(&format!("{} [label=\"Dereference\"];", id));
+                let expr_id = expr.0.visualize_dot_render_node(next_node, out);
+                out.push_str(&format!("{} -> {};", id, expr_id));
             },
             &Variable(ref name) =>
                 out.push_str(&format!("{} [label=\"Variable({})\"];", id, name)[..]),

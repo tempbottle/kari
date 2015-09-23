@@ -8,6 +8,8 @@ pub enum Token {
     KeywordElse,
     KeywordDef,
     KeywordFn,
+    KeywordRef,
+    KeywordDeref,
     LBrace,
     RBrace,
     LParen,
@@ -46,6 +48,8 @@ impl fmt::Display for Token {
             &KeywordElse => write!(f, "else"),
             &KeywordDef => write!(f, "def"),
             &KeywordFn => write!(f, "fn"),
+            &KeywordRef => write!(f, "ref"),
+            &KeywordDeref => write!(f, "deref"),
             &LBrace => write!(f, "lbrace"),
             &RBrace => write!(f, "rbrace"),
             &LParen => write!(f, "lparen"),
@@ -168,6 +172,12 @@ pub fn lex_source(source: String, file: Option<String>) -> Vec<TokenContainer> {
                     }
                     else if &token[..] == "fn" {
                         Token::KeywordFn
+                    }
+                    else if &token[..] == "ref" {
+                        Token::KeywordRef
+                    }
+                    else if &token[..] == "deref" {
+                        Token::KeywordDeref
                     }
                     else {
                         Token::Ident(token.clone())

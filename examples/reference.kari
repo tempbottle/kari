@@ -1,0 +1,9 @@
+let a := 1
+
+let b := ref a
+
+print(deref b)
+
+a := 2
+
+print(deref b)

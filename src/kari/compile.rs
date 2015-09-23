@@ -69,6 +69,19 @@ impl Compiler {
                 try!(self.compile_expr(&**rhs, instrs, blocks));
                 instrs.push(PositionContainer(BytecodeInstr::CmpEq, pos.clone()));
             },
+            &PositionContainer(Expression::Reference(ref expr), ref pos) => {
+                match expr.0 {
+                    Expression::Variable(ref name) => {
+                        instrs.push(PositionContainer(
+                            BytecodeInstr::PushRef(name.clone()), pos.clone()));
+                    },
+                    _ => return Err(PositionContainer("expected rvalue".to_string(), pos.clone()))
+                }
+            },
+            &PositionContainer(Expression::Dereference(ref expr), ref pos) => {
+                try!(self.compile_expr(&**expr, instrs, blocks));
+                instrs.push(PositionContainer(BytecodeInstr::Deref, pos.clone()));
+            },
             &PositionContainer(Expression::FuncDefinition(ref args, ref body), ref pos) => {
                 let id = self.next_block_id;
                 self.next_block_id.0 += 1;

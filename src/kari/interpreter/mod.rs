@@ -185,6 +185,19 @@ impl Interpreter {
                 self.stack.push(val);
             },
             BytecodeInstr::PushFunc(id, nargs) => self.stack.push(Value::Function(id, nargs)),
+            BytecodeInstr::PushRef(name) => {
+                let id = try!(self.current_env.as_ref().unwrap().lookup(name));
+                self.stack.push(Value::Ref(id));
+            },
+            BytecodeInstr::Deref => {
+                match try!(self.stack.pop()) {
+                    Value::Ref(id) => {
+                        let val = self.get_var(id).value.clone();
+                        self.stack.push(val);
+                    },
+                    _ => return Err(RuntimeError::TypeMismatch)
+                }
+            },
             BytecodeInstr::DeclareVar(name) => {
                 self.declare_var(name);
             },

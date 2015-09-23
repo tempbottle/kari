@@ -111,6 +111,22 @@ impl Parser {
                 let (exprs, range) = try!(self.parse_block());
                 PositionContainer(Expression::Block(exprs), range)
             },
+            &Token::KeywordRef => {
+                let mut range = self.next().1;
+                let expr = try!(self.parse_expression());
+                range.extend(expr.1.end.clone());
+                PositionContainer(
+                    Expression::Reference(Box::new(expr)),
+                    range)
+            },
+            &Token::KeywordDeref => {
+                let mut range = self.next().1;
+                let expr = try!(self.parse_expression());
+                range.extend(expr.1.end.clone());
+                PositionContainer(
+                    Expression::Dereference(Box::new(expr)),
+                    range)
+            },
             &Token::KeywordLet => try!(self.parse_var_declaration()),
             &Token::KeywordIf => try!(self.parse_if_statement()),
             &Token::KeywordDef => try!(self.parse_func_declaration()),
