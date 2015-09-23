@@ -49,6 +49,8 @@ fn main() {
 
     let mut interpreter = kari::interpreter::Interpreter::new();
     interpreter.add_blocks(bytecode);
-    interpreter.run_block(kari::bytecode::BlockId(0)).unwrap();
-    println!("{:?}", interpreter.variables);
+    if let Err(err) = interpreter.run_block(kari::bytecode::BlockId(0)) {
+        println!("{:?}\n{}\n{}", err, interpreter.traceback(), interpreter.format_vars());
+    }
+
 }

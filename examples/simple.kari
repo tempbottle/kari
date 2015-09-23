@@ -1,8 +1,13 @@
-def f(x) {
-    x + 1
+def f(x, y) {
+    if x = 0 {
+        x
+    }
+    else {
+        f(x - 1, y)
+    }
 }
 
-let a := f(1)
+let a := f(10, 10)
 let b := a / 10
 let c := "Hello, World"
 

@@ -12,6 +12,7 @@ pub enum Token {
     RBrace,
     LParen,
     RParen,
+    DQuote,
     Comma,
     Colon,
     Equals,
@@ -21,6 +22,7 @@ pub enum Token {
     Slash,
     Newline,
     Eof,
+    Str(String),
     Ident(String),
     Integer(i32),
 }
@@ -29,6 +31,7 @@ pub enum Token {
 enum LexerState {
     Start,
     Ident,
+    Str,
     Integer,
 }
 
@@ -47,6 +50,7 @@ impl fmt::Display for Token {
             &RBrace => write!(f, "rbrace"),
             &LParen => write!(f, "lparen"),
             &RParen => write!(f, "rparen"),
+            &DQuote => write!(f, "dquote"),
             &Comma => write!(f, "comma"),
             &Colon => write!(f, "colon"),
             &Equals => write!(f, "equals"),
@@ -58,6 +62,7 @@ impl fmt::Display for Token {
             &Eof => write!(f, "EOF"),
             &Ident(ref name) => write!(f, "identifier({})", name),
             &Integer(x) => write!(f, "integer({})", x),
+            &Str(ref s) => write!(f, "str({})", s),
         }
     }
 }
@@ -116,6 +121,10 @@ pub fn lex_source(source: String, file: Option<String>) -> Vec<TokenContainer> {
             }
             else if c == ')' {
                 tokens.push(PositionContainer(Token::RParen, range.clone()));
+            }
+            else if c == '"' {
+                tokens.push(PositionContainer(Token::DQuote, range.clone()));
+                state = LexerState::Str;
             }
             else if c == ',' {
                 tokens.push(PositionContainer(Token::Comma, range.clone()));
@@ -176,6 +185,18 @@ pub fn lex_source(source: String, file: Option<String>) -> Vec<TokenContainer> {
                     Token::Integer(token.parse().unwrap()), range.clone()));
                 reset = true;
                 advance = false;
+            },
+
+            LexerState::Str => if c == '"' {
+                state = LexerState::Start;
+                tokens.push(PositionContainer(Token::Str(token.clone()), range.clone()));
+                tokens.push(PositionContainer(
+                    Token::DQuote, PositionRange::new(range.start.clone(), range.start.clone())));
+                reset = true;
+                //not advance=false because the DQuote has already been handled
+            }
+            else {
+                token.push(c);
             }
         }
 

@@ -1,6 +1,7 @@
 use interpreter::runtime_err::*;
 use interpreter::value::Value;
 
+#[derive(Clone, Debug)]
 pub struct Stack(Vec<Value>);
 
 impl Stack {

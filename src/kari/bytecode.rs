@@ -2,9 +2,6 @@ use std::fmt;
 use position::*;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct VarId(pub u32);
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct BlockId(pub u32);
 
 #[derive(Clone, Debug)]
@@ -16,9 +13,11 @@ pub enum BytecodeInstr {
     Ret,
     PushNil,
     PushInt(i32),
-    PushVar(VarId),
+    PushStr(String),
+    PushVar(String),
     PushFunc(BlockId, u32),
-    SetVar(VarId),
+    DeclareVar(String),
+    SetVar(String),
     Add,
     Sub,
     Mul,
@@ -46,9 +45,11 @@ impl fmt::Display for BytecodeInstr {
             &Ret => write!(f, "RET"),
             &PushNil => write!(f, "PUSHNIL"),
             &PushInt(x) => write!(f, "PUSHINT {}", x),
-            &PushVar(VarId(x)) => write!(f, "PUSHVAR {}", x),
+            &PushStr(ref s) => write!(f, "PUSHSTR \"{}\"", s),
+            &PushVar(ref name) => write!(f, "PUSHVAR {}", name),
             &PushFunc(BlockId(x), nargs) => write!(f, "PUSHFUNC {} {}", x, nargs),
-            &SetVar(VarId(x)) => write!(f, "SETVAR {}", x),
+            &DeclareVar(ref name) => write!(f, "DECLVAR {}", name),
+            &SetVar(ref name) => write!(f, "SETVAR {}", name),
             &Add => write!(f, "ADD"),
             &Sub => write!(f, "SUB"),
             &Mul => write!(f, "MUL"),

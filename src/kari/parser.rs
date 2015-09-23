@@ -83,7 +83,17 @@ impl Parser {
             PositionContainer(Token::Ident(name), pos) =>
                 return Ok(PositionContainer(Expression::Variable(name), pos)),
             PositionContainer(Token::Integer(x), pos) =>
-                return Ok(PositionContainer(Expression::Integer(x), pos))
+                return Ok(PositionContainer(Expression::Integer(x), pos)),
+            PositionContainer(Token::DQuote, pos) => {
+                let content = expect!(self, "string after quote", {
+                    PositionContainer(Token::Str(s), _) => s
+                });
+                let end = expect!(self, "closing quote", {
+                    PositionContainer(Token::DQuote, pos) => pos
+                });
+                let range = pos.extend_new(end.end);
+                return Ok(PositionContainer(Expression::Str(content), range));
+            }
         });
     }
 
