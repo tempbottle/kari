@@ -1,12 +1,13 @@
 pub mod stack;
 pub mod value;
 pub mod runtime_err;
+mod builtins;
 
 use std::rc::Rc;
+use std::borrow::Borrow;
 use std::collections::HashMap;
-use position::*;
 use self::runtime_err::*;
-use bytecode::{BlockId, BytecodeBlock, BytecodeInstr, BytecodeInstrContainer};
+use bytecode::{BlockId, BytecodeBlock, BytecodeInstr};
 use self::stack::Stack;
 use self::value::Value;
 
@@ -70,7 +71,7 @@ impl EnvironmentNode {
 
 impl Interpreter {
     pub fn new() -> Interpreter {
-        Interpreter {
+        let mut i = Interpreter {
             stack: Stack::new(),
             call_stack: Vec::new(),
             variables: HashMap::new(),
@@ -79,7 +80,9 @@ impl Interpreter {
             current_env: None,
             instr_idx: 0,
             current_block: BlockId(0)
-        }
+        };
+        builtins::define_builtins(&mut i);
+        i
     }
 
     pub fn traceback(&self) -> String {
@@ -95,7 +98,7 @@ impl Interpreter {
     pub fn format_vars(&self) -> String {
         let mut ret = String::new();
         for &(ref name, id) in self.current_env.as_ref().unwrap().get_all_vars().iter() {
-            ret.push_str(&format!("{}: {:?}\n", name, self.get_var(id).value)[..]);
+            ret.push_str(&format!("{}: {}\n", name, self.get_var(id).value)[..]);
         }
         ret
     }
@@ -132,6 +135,14 @@ impl Interpreter {
         });
     }
 
+    #[inline]
+    pub fn set_host_func<F, S>(&mut self, name: S, func: F) where
+        F: Fn(&mut Interpreter) -> RuntimeResult<()> + 'static, S: Borrow<str>
+    {
+        let id = self.declare_var(name.borrow().to_string());
+        self.set_var(id, Value::HostFunction(Rc::new(func)));
+    }
+
     fn jump(&mut self, id: BlockId) {
         self.call_stack.push((self.current_block, self.instr_idx, self.current_env.clone()));
         self.current_block = id;
@@ -150,17 +161,20 @@ impl Interpreter {
             },
             BytecodeInstr::Call => {
                 match try!(self.stack.pop()) {
-                    Value::Function(id, _) => self.jump(id),
+                    Value::Function(id, _) => {
+                        self.jump(id);
+                        return Ok(());
+                    },
+                    Value::HostFunction(ref f) => try!(f(self)),
                     _ => return Err(RuntimeError::TypeMismatch)
                 }
-                return Ok(());
             },
             BytecodeInstr::Ret => {
                 let (block, idx, env) = self.call_stack.pop().unwrap();
                 self.current_env = env;
                 self.current_block = block;
                 self.instr_idx = idx + 1;
-                return Ok(());
+                 return Ok(());
             },
             BytecodeInstr::PushNil => self.stack.push(Value::Nil),
             BytecodeInstr::PushInt(x) => self.stack.push(Value::Integer(x)),

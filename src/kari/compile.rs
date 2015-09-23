@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use position::*;
 use ast::{Expression, ExpressionContainer};
 use bytecode::{BlockId, BytecodeBlock, BytecodeInstr, BytecodeInstrContainer};

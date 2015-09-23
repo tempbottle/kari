@@ -10,6 +10,7 @@ def f(x, y) {
 let a := f(10, 10)
 let b := a / 10
 let c := "Hello, World"
+print("Hello, World")
 
 if a = b {
     let b := a

@@ -209,7 +209,7 @@ impl Parser {
     {
         let tok = self.next(); //assume that this is '('
         let mut args = Vec::new();
-        let mut pos: PositionRange;
+        let pos: PositionRange;
         loop {
             args.push(try!(self.parse_expression()));
             expect!(self, "comma or close parenthesis", {
