@@ -5,7 +5,7 @@ mod builtins;
 
 use std::rc::Rc;
 use std::borrow::Borrow;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::cmp::Ordering;
 use self::runtime_err::*;
 use bytecode::{BlockId, BytecodeBlock, BytecodeInstr};
@@ -32,7 +32,8 @@ pub struct Interpreter {
     pub stack: Stack,
     pub call_stack: Vec<(BlockId, usize, Option<Rc<EnvironmentNode>>)>,
     pub variables: HashMap<VarId, Variable>,
-    blocks: HashMap<BlockId, BytecodeBlock>,
+    pub blocks: HashMap<BlockId, BytecodeBlock>,
+    gc_counter: u32,
     next_var_id: VarId,
     current_env: Option<Rc<EnvironmentNode>>,
     instr_idx: usize,
@@ -48,8 +49,8 @@ impl EnvironmentNode {
         }
     }
 
-    pub fn lookup(&self, name: String) -> RuntimeResult<VarId> {
-        if name == self.symbol {
+    pub fn lookup(&self, name: &String) -> RuntimeResult<VarId> {
+        if *name == self.symbol {
             Ok(self.id)
         }
         else {
@@ -70,6 +71,32 @@ impl EnvironmentNode {
     }
 }
 
+impl Variable {
+    pub fn get_refs(&self, i: &Interpreter) -> Vec<VarId> {
+        let mut vars = Vec::new();
+        match &self.value {
+            &Value::Ref(id) => vars.push(id),
+            //TODO: possibly store this info in the function's variable
+            &Value::Function(id, _) => for instr in i.blocks[&id].instrs.iter() {
+                match &instr.0 {
+                    &BytecodeInstr::PushVar(ref name) => if let Ok(id) = self.env.lookup(name) {
+                        vars.push(id);
+                    },
+                    &BytecodeInstr::PushRef(ref name) => if let Ok(id) = self.env.lookup(name) {
+                        vars.push(id);
+                    },
+                    &BytecodeInstr::SetVar(ref name) => if let Ok(id) = self.env.lookup(name) {
+                        vars.push(id);
+                    },
+                    _ => ()
+                }
+            },
+            _ => ()
+        }
+        vars
+    }
+}
+
 impl Interpreter {
     pub fn new() -> Interpreter {
         let mut i = Interpreter {
@@ -77,6 +104,7 @@ impl Interpreter {
             call_stack: Vec::new(),
             variables: HashMap::new(),
             blocks: HashMap::new(),
+            gc_counter: 10,
             next_var_id: VarId(0),
             current_env: None,
             instr_idx: 0,
@@ -175,6 +203,11 @@ impl Interpreter {
                 self.current_env = env;
                 self.current_block = block;
                 self.instr_idx = idx + 1;
+                self.gc_counter -= 1;
+                if self.gc_counter == 0 {
+                    self.run_gc();
+                    self.gc_counter = 10;
+                }
                  return Ok(());
             },
             BytecodeInstr::PushNil => self.stack.push(Value::Nil),
@@ -182,13 +215,13 @@ impl Interpreter {
             BytecodeInstr::PushBool(b) => self.stack.push(Value::Boolean(b)),
             BytecodeInstr::PushStr(s) => self.stack.push(Value::Str(s.clone())),
             BytecodeInstr::PushVar(name) => {
-                let id = try!(self.current_env.as_ref().unwrap().lookup(name));
+                let id = try!(self.current_env.as_ref().unwrap().lookup(&name));
                 let val = self.get_var(id).value.clone();
                 self.stack.push(val);
             },
             BytecodeInstr::PushFunc(id, nargs) => self.stack.push(Value::Function(id, nargs)),
             BytecodeInstr::PushRef(name) => {
-                let id = try!(self.current_env.as_ref().unwrap().lookup(name));
+                let id = try!(self.current_env.as_ref().unwrap().lookup(&name));
                 self.stack.push(Value::Ref(id));
             },
             BytecodeInstr::Deref => {
@@ -204,7 +237,7 @@ impl Interpreter {
                 self.declare_var(name);
             },
             BytecodeInstr::SetVar(name) => {
-                let id = try!(self.current_env.as_ref().unwrap().lookup(name));
+                let id = try!(self.current_env.as_ref().unwrap().lookup(&name));
                 let val = try!(self.stack.pop());
                 self.set_var(id, val);
             },
@@ -269,5 +302,27 @@ impl Interpreter {
             try!(self.run_instr());
         }
         Ok(())
+    }
+
+    pub fn run_gc(&mut self) {
+        let mut unmarked = self.variables.keys().cloned().collect::<HashSet<VarId>>();
+        //println!("GC cycle");
+        match self.current_env.as_ref() {
+            Some(env) => {
+                //mark all objects in local scope
+                for (_, id) in env.get_all_vars() {
+                    unmarked.remove(&id);
+                    for id in self.get_var(id).get_refs(self) {
+                        unmarked.remove(&id);
+                    }
+                }
+                //sweep
+                for id in unmarked.iter() {
+                    //println!("Garbage collecting {}", id.0);
+                    self.variables.remove(&id);
+                }
+            },
+            None => ()
+        }
     }
 }

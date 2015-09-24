@@ -3,18 +3,8 @@ def factorial1(x) {
         1
     }
     else {
-        factorial(x - 1) * x
+        factorial1(x - 1) * x
     }
 }
 
-def factorial2(x) {
-    let accum := 1
-    while x /= 1 {
-        accum := accum * x
-        x := x - 1
-    }
-    accum
-}
-
-print(factorial1(x))
-print(factorial2(x))
+print(factorial1(10))

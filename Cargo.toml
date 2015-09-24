@@ -11,5 +11,5 @@ name = "kari"
 path = "src/kari/lib.rs"
 
 [[bin]]
-name = "solc"
+name = "karic"
 path = "src/karic/main.rs"
