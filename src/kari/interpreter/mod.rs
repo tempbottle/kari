@@ -55,7 +55,7 @@ impl EnvironmentNode {
         else {
             match self.parent {
                 Some(ref parent) => parent.lookup(name),
-                None => Err(RuntimeError::UnknownVariable)
+                None => Err(RuntimeError::UnknownVariable(name.clone()))
             }
         }
     }
@@ -179,6 +179,7 @@ impl Interpreter {
             },
             BytecodeInstr::PushNil => self.stack.push(Value::Nil),
             BytecodeInstr::PushInt(x) => self.stack.push(Value::Integer(x)),
+            BytecodeInstr::PushBool(b) => self.stack.push(Value::Boolean(b)),
             BytecodeInstr::PushStr(s) => self.stack.push(Value::Str(s.clone())),
             BytecodeInstr::PushVar(name) => {
                 let id = try!(self.current_env.as_ref().unwrap().lookup(name));

@@ -69,6 +69,21 @@ impl fmt::Display for Value {
     }
 }
 
+impl fmt::Debug for Value {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::Value::*;
+        match self {
+            &Nil => write!(f, "Nil"),
+            &Integer(x) => write!(f, "Integer({})", x),
+            &Boolean(b) => write!(f, "Boolean({})", b),
+            &Str(ref s) => write!(f, "Str({})", s),
+            &Ref(VarId(id)) => write!(f, "Ref({})", id),
+            &Function(BlockId(id), _) => write!(f, "Function({})", id),
+            &HostFunction(_) => write!(f, "HostFunction"),
+        }
+    }
+}
+
 impl PartialEq<Value> for Value {
     fn eq(&self, other: &Value) -> bool {
         use self::Value::*;

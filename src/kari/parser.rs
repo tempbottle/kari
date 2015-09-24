@@ -22,6 +22,17 @@ macro_rules! expect {
     }
 }
 
+macro_rules! expect_lookahead {
+    ($parser:expr, $msg:expr, { $( $token:pat => $body:expr ),* }) => {
+        match $parser.lookahead() {
+            $( $token => $body ),*,
+            t =>
+                return Err(ParserError(format!("Expected {}, got `{}'", $msg, t),
+                    $parser.tokens[$parser.pos].1.clone()))
+        }
+    }
+}
+
 impl Parser {
     pub fn new(tokens: Vec<TokenContainer>) -> Parser {
         Parser {
@@ -45,7 +56,7 @@ impl Parser {
         loop {
             match self.lookahead() {
                 &Token::Eof => break,
-                _ => exprs.push(try!(self.parse_expression()))
+                _ => exprs.push(try!(self.parse_toplevel()))
             }
         }
 
@@ -62,7 +73,7 @@ impl Parser {
                     self.next();
                     break;
                 },
-                _ => exprs.push(try!(self.parse_expression()))
+                _ => exprs.push(try!(self.parse_toplevel()))
             }
         }
         let range = tok.1.clone().extend_new(exprs.last().unwrap().clone().1.end);
@@ -70,35 +81,9 @@ impl Parser {
     }
 
     fn parse_primary(&mut self) -> ParserResult {
-        let expr = expect!(self, "primary expression", {
-            PositionContainer(Token::Ident(name), pos) =>
-                PositionContainer(Expression::Variable(name), pos),
-            PositionContainer(Token::Integer(x), pos) =>
-                PositionContainer(Expression::Integer(x), pos),
-            PositionContainer(Token::DQuote, pos) => {
-                let content = expect!(self, "string after quote", {
-                    PositionContainer(Token::Str(s), _) => s
-                });
-                let end = expect!(self, "closing quote", {
-                    PositionContainer(Token::DQuote, pos) => pos
-                });
-                let range = pos.extend_new(end.end);
-                PositionContainer(Expression::Str(content), range)
-            }
-        });
-        match self.lookahead() {
-            &Token::LParen => {
-                let (args, pos) = try!(self.parse_func_call_args());
-                let range = expr.1.clone().extend_new(pos.end);
-                Ok(PositionContainer(Expression::Call(Box::new(expr), args), range))
-            },
-            _ => Ok(expr)
-        }
-    }
-
-    fn parse_expression(&mut self) -> ParserResult {
         let expr = match self.lookahead() {
             &Token::LBrace => {
+                println!("{:?}", self.lookahead());
                 let (exprs, range) = try!(self.parse_block());
                 PositionContainer(Expression::Block(exprs), range)
             },
@@ -127,8 +112,51 @@ impl Parser {
                 func.1 = tok.1.extend_new(func.1.end.clone());
                 func
             },
-            _ => try!(self.parse_primary())
+            _ => expect!(self, "primary expression", {
+                PositionContainer(Token::Ident(name), pos) =>
+                    PositionContainer(Expression::Variable(name), pos),
+                PositionContainer(Token::Integer(x), pos) =>
+                    PositionContainer(Expression::Integer(x), pos),
+                PositionContainer(Token::KeywordTrue, pos) =>
+                    PositionContainer(Expression::Boolean(true), pos),
+                PositionContainer(Token::KeywordFalse, pos) =>
+                    PositionContainer(Expression::Boolean(false), pos),
+                PositionContainer(Token::DQuote, pos) => {
+                    let content = expect!(self, "string after quote", {
+                        PositionContainer(Token::Str(s), _) => s
+                    });
+                    let end = expect!(self, "closing quote", {
+                        PositionContainer(Token::DQuote, pos) => pos
+                    });
+                    let range = pos.extend_new(end.end);
+                    PositionContainer(Expression::Str(content), range)
+                }
+            })
         };
+        match self.lookahead() {
+            &Token::LParen => {
+                let (args, pos) = try!(self.parse_func_call_args());
+                let range = expr.1.clone().extend_new(pos.end);
+                Ok(PositionContainer(Expression::Call(Box::new(expr), args), range))
+            },
+            _ => Ok(expr)
+        }
+    }
+
+    fn parse_toplevel(&mut self) -> ParserResult {
+        let expr = try!(self.parse_expression());
+        match self.lookahead() {
+            &Token::Semicolon => {
+                let end = self.next().1;
+                let range = expr.1.clone().extend_new(end.end);
+                Ok(PositionContainer(Expression::Statement(Box::new(expr)), range))
+            },
+            _ => Ok(expr)
+        }
+    }
+
+    fn parse_expression(&mut self) -> ParserResult {
+        let expr = try!(self.parse_primary());
         match self.lookahead() {
             &Token::Colon => {
                 //variable assignment
@@ -139,11 +167,6 @@ impl Parser {
                 let rhs = try!(self.parse_expression());
                 let range = expr.1.clone().extend_new(rhs.1.end.clone());
                 Ok(PositionContainer(Expression::Assignment(Box::new(expr), Box::new(rhs)), range))
-            },
-            &Token::Semicolon => {
-                let end = self.next().1;
-                let range = expr.1.clone().extend_new(end.end);
-                Ok(PositionContainer(Expression::Statement(Box::new(expr)), range))
             },
             _ => Ok(try!(self.parse_binop_rhs(expr, 0)))
         }
@@ -204,14 +227,14 @@ impl Parser {
     fn parse_if_statement(&mut self) -> ParserResult {
         let tok = self.next(); //assume that this is 'if'
         let cond = try!(self.parse_expression());
-        expect!(self, "block after if _", {
-            PositionContainer(Token::LBrace, _) => ()
+        expect_lookahead!(self, "block after if _", {
+            &Token::LBrace => ()
         });
         let t = try!(self.parse_block());
         let (f, range) = if let &Token::KeywordElse = self.lookahead() {
             self.next();
-            expect!(self, "block after else", {
-                PositionContainer(Token::LBrace, _) => ()
+            expect_lookahead!(self, "block after else", {
+                &Token::LBrace => ()
             });
             let f = try!(self.parse_block());
             let range = tok.1.extend_new(f.0.last().unwrap().1.end.clone());

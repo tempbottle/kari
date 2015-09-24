@@ -1,7 +1,7 @@
 #[derive(Clone, Debug)]
 pub enum RuntimeError {
     EmptyStack,
-    UnknownVariable,
+    UnknownVariable(String),
     TypeMismatch
 }
 

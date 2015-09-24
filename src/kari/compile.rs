@@ -44,6 +44,8 @@ impl Compiler {
                 instrs.push(PositionContainer(BytecodeInstr::PushVar(name.clone()), pos.clone())),
             &PositionContainer(Expression::Integer(x), ref pos) =>
                 instrs.push(PositionContainer(BytecodeInstr::PushInt(x), pos.clone())),
+            &PositionContainer(Expression::Boolean(b), ref pos) =>
+                instrs.push(PositionContainer(BytecodeInstr::PushBool(b), pos.clone())),
             &PositionContainer(Expression::Str(ref s), ref pos) =>
                 instrs.push(PositionContainer(BytecodeInstr::PushStr(s.clone()), pos.clone())),
             &PositionContainer(Expression::Add(ref lhs, ref rhs), ref pos) => {
@@ -176,7 +178,6 @@ pub fn compile_ast(expr: ExpressionContainer) -> CompileResult<Vec<BytecodeBlock
     let mut blocks = Vec::new();
     instrs.push(PositionContainer(BytecodeInstr::Jump(BlockId(1)), expr.1.clone()));
     try!(Compiler::new().compile_expr(&expr, &mut instrs, &mut blocks));
-    instrs.push(PositionContainer(BytecodeInstr::Pop, expr.1.clone()));
     blocks.push(BytecodeBlock::new(BlockId(0), instrs));
     Ok(blocks)
 }

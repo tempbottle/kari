@@ -10,6 +10,7 @@ pub enum Expression {
     Dereference(Box<ExpressionContainer>),
     Variable(String),
     Integer(i32),
+    Boolean(bool),
     Str(String),
     Add(Box<ExpressionContainer>, Box<ExpressionContainer>),
     Sub(Box<ExpressionContainer>, Box<ExpressionContainer>),
@@ -133,6 +134,7 @@ impl Expression {
             &Variable(ref name) =>
                 out.push_str(&format!("{} [label=\"Variable({})\"];", id, name)[..]),
             &Integer(x) => out.push_str(&format!("{} [label=\"Integer({})\"];", id, x)[..]),
+            &Boolean(b) => out.push_str(&format!("{} [label=\"Boolean({})\"];", id, b)[..]),
             &Str(ref s) => out.push_str(&format!("{} [label=\"Str({})\"];", id, s)[..]),
         }
         id

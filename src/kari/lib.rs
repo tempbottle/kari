@@ -5,3 +5,5 @@ pub mod ast;
 pub mod bytecode;
 pub mod compile;
 pub mod interpreter;
+#[cfg(test)]
+mod tests;

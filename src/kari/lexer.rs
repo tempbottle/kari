@@ -10,6 +10,8 @@ pub enum Token {
     KeywordFn,
     KeywordRef,
     KeywordDeref,
+    KeywordTrue,
+    KeywordFalse,
     LBrace,
     RBrace,
     LParen,
@@ -52,6 +54,8 @@ impl fmt::Display for Token {
             &KeywordFn => write!(f, "fn"),
             &KeywordRef => write!(f, "ref"),
             &KeywordDeref => write!(f, "deref"),
+            &KeywordTrue => write!(f, "true"),
+            &KeywordFalse => write!(f, "false"),
             &LBrace => write!(f, "lbrace"),
             &RBrace => write!(f, "rbrace"),
             &LParen => write!(f, "lparen"),
@@ -165,7 +169,7 @@ pub fn lex_source(source: String, file: Option<String>) -> Vec<TokenContainer> {
                 tokens.push(PositionContainer(Token::Semicolon, range.clone()));
             },
 
-            LexerState::Ident => if c.is_alphanumeric() {
+            LexerState::Ident => if c.is_alphanumeric() || c == '_' {
                 token.push(c);
             }
             else {
@@ -191,6 +195,12 @@ pub fn lex_source(source: String, file: Option<String>) -> Vec<TokenContainer> {
                     }
                     else if &token[..] == "deref" {
                         Token::KeywordDeref
+                    }
+                    else if &token[..] == "true" {
+                        Token::KeywordTrue
+                    }
+                    else if &token[..] == "false" {
+                        Token::KeywordFalse
                     }
                     else {
                         Token::Ident(token.clone())
