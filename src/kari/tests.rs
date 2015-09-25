@@ -73,3 +73,11 @@ fn while_loops() {
     }
     test_output(b);"#, Value::Integer(10));
 }
+
+#[test]
+fn lists() {
+    test_kari(r#"
+    let a := [1, 2, 3];
+    test_output(index(a, 1));
+    "#, Value::Integer(2));
+}

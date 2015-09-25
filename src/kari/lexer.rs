@@ -14,10 +14,12 @@ pub enum Token {
     KeywordDeref,
     KeywordTrue,
     KeywordFalse,
-    LBrace,
-    RBrace,
-    LParen,
-    RParen,
+    LBrace, //{
+    RBrace, //}
+    LBracket, //[
+    RBracket, //]
+    LParen, //(
+    RParen, //)
     DQuote,
     Comma,
     Semicolon,
@@ -62,6 +64,8 @@ impl fmt::Display for Token {
             &KeywordFalse => write!(f, "false"),
             &LBrace => write!(f, "lbrace"),
             &RBrace => write!(f, "rbrace"),
+            &LBracket => write!(f, "lbracket"),
+            &RBracket => write!(f, "rbracket"),
             &LParen => write!(f, "lparen"),
             &RParen => write!(f, "rparen"),
             &DQuote => write!(f, "dquote"),
@@ -131,6 +135,12 @@ pub fn lex_source(source: String, file: Option<String>) -> Vec<TokenContainer> {
             }
             else if c == '}' {
                 tokens.push(PositionContainer(Token::RBrace, range.clone()));
+            }
+            else if c == '[' {
+                tokens.push(PositionContainer(Token::LBracket, range.clone()));
+            }
+            else if c == ']' {
+                tokens.push(PositionContainer(Token::RBracket, range.clone()));
             }
             else if c == '(' {
                 tokens.push(PositionContainer(Token::LParen, range.clone()));

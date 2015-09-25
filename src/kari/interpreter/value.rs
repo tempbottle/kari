@@ -12,6 +12,7 @@ pub enum Value {
     Integer(i32),
     Boolean(bool),
     Str(String),
+    List(Vec<Value>),
     Ref(VarId),
     Function(BlockId, u32),
     HostFunction(Rc<Fn(&mut Interpreter) -> RuntimeResult<()>>),
@@ -23,6 +24,7 @@ pub enum ValueType {
     Integer,
     Boolean,
     Str,
+    List,
     Function,
     Ref,
     HostFunction,
@@ -36,6 +38,7 @@ impl Value {
             &Integer(_) => ValueType::Integer,
             &Boolean(_) => ValueType::Boolean,
             &Str(_) => ValueType::Str,
+            &List(_) => ValueType::List,
             &Ref(_) => ValueType::Ref,
             &Function(_, _) => ValueType::Function,
             &HostFunction(_) => ValueType::HostFunction,
@@ -62,6 +65,8 @@ impl fmt::Display for Value {
             &Integer(x) => write!(f, "{}", x),
             &Boolean(b) => write!(f, "{}", b),
             &Str(ref s) => write!(f, "{}", s),
+            &List(ref es) => write!(f, "[{}]",
+                es.iter().map(|e| format!("{}", e)).collect::<Vec<String>>().join(", ")),
             &Ref(VarId(id)) => write!(f, "ref({})", id),
             &Function(_, _) => write!(f, "<function>"),
             &HostFunction(_) => write!(f, "<hostfunction>"),
@@ -77,6 +82,7 @@ impl fmt::Debug for Value {
             &Integer(x) => write!(f, "Integer({})", x),
             &Boolean(b) => write!(f, "Boolean({})", b),
             &Str(ref s) => write!(f, "Str({})", s),
+            &List(ref s) => write!(f, "List({:?})", s),
             &Ref(VarId(id)) => write!(f, "Ref({})", id),
             &Function(BlockId(id), _) => write!(f, "Function({})", id),
             &HostFunction(_) => write!(f, "HostFunction"),
@@ -102,6 +108,10 @@ impl PartialEq<Value> for Value {
             },
             &Str(ref a) => match other {
                 &Str(ref b) => a == b,
+                _ => false
+            },
+            &List(ref a) => match other {
+                &List(ref b) => a == b,
                 _ => false
             },
             &Ref(a) => match other {

@@ -48,6 +48,12 @@ impl Compiler {
                 instrs.push(PositionContainer(BytecodeInstr::PushBool(b), pos.clone())),
             &PositionContainer(Expression::Str(ref s), ref pos) =>
                 instrs.push(PositionContainer(BytecodeInstr::PushStr(s.clone()), pos.clone())),
+            &PositionContainer(Expression::List(ref es), ref pos) => {
+                for expr in es.iter() {
+                    try!(self.compile_expr(&*expr, instrs, blocks));
+                }
+                instrs.push(PositionContainer(BytecodeInstr::PushList(es.len() as u32), pos.clone()));
+            },
             &PositionContainer(Expression::Add(ref lhs, ref rhs), ref pos) => {
                 try!(self.compile_expr(&**lhs, instrs, blocks));
                 try!(self.compile_expr(&**rhs, instrs, blocks));

@@ -92,6 +92,13 @@ impl Variable {
                     _ => ()
                 }
             },
+            &Value::List(ref es) => for e in es.iter() {
+                //TODO: NO CLONING!
+                vars.extend(&Variable {
+                    env: self.env.clone(),
+                    value: e.clone()
+                }.get_refs(i)[..]);
+            },
             _ => ()
         }
         vars
@@ -228,6 +235,13 @@ impl Interpreter {
             BytecodeInstr::PushInt(x) => self.stack.push(Value::Integer(x)),
             BytecodeInstr::PushBool(b) => self.stack.push(Value::Boolean(b)),
             BytecodeInstr::PushStr(s) => self.stack.push(Value::Str(s.clone())),
+            BytecodeInstr::PushList(ne) => {
+                let mut elements = Vec::with_capacity(ne as usize);
+                for _ in (0..ne) {
+                    elements.push(try!(self.stack.pop()));
+                }
+                self.stack.push(Value::List(elements));
+            },
             BytecodeInstr::PushVar(name) => {
                 let id = try!(self.current_env.as_ref().unwrap().lookup(&name));
                 let val = self.get_var(id).value.clone();

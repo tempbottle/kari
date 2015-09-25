@@ -12,6 +12,7 @@ pub enum Expression {
     Integer(i32),
     Boolean(bool),
     Str(String),
+    List(Vec<ExpressionContainer>),
     Add(Box<ExpressionContainer>, Box<ExpressionContainer>),
     Sub(Box<ExpressionContainer>, Box<ExpressionContainer>),
     Mul(Box<ExpressionContainer>, Box<ExpressionContainer>),
@@ -150,6 +151,13 @@ impl Expression {
             &Integer(x) => out.push_str(&format!("{} [label=\"Integer({})\"];", id, x)[..]),
             &Boolean(b) => out.push_str(&format!("{} [label=\"Boolean({})\"];", id, b)[..]),
             &Str(ref s) => out.push_str(&format!("{} [label=\"Str({})\"];", id, s)[..]),
+            &List(ref es) => {
+                out.push_str(&format!("{} [label=\"List\"];", id)[..]);
+                for expr in es.iter() {
+                    let expr_id = expr.0.visualize_dot_render_node(next_node, out);
+                    out.push_str(&format!("{} -> {};", id, expr_id)[..]);
+                }
+            }
         }
         id
     }

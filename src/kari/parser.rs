@@ -94,7 +94,8 @@ impl Parser {
                     PositionContainer(Token::RParen, _) => ()
                 });
                 expr
-            }
+            },
+            &Token::LBracket => try!(self.parse_list()),
             &Token::KeywordRef => {
                 let mut range = self.next().1;
                 let expr = try!(self.parse_expression());
@@ -336,6 +337,28 @@ impl Parser {
             }
         }
         Ok((args, tok.1.extend_new(pos.end)))
+    }
+
+    fn parse_list(&mut self) -> ParserResult {
+        let tok = self.next(); //assume that this is '['
+        let mut exprs = Vec::new();
+        let pos: PositionRange;
+        match self.lookahead() {
+            &Token::RBracket => {
+                pos = self.next().1;
+            },
+            _ => loop {
+                exprs.push(try!(self.parse_expression()));
+                expect!(self, "comma or close bracket", {
+                    PositionContainer(Token::Comma, _) => (),
+                    PositionContainer(Token::RBracket, pos2) => {
+                        pos = pos2;
+                        break;
+                    }
+                });
+            }
+        }
+        Ok(PositionContainer(Expression::List(exprs), tok.1.extend_new(pos.end)))
     }
 
     fn parse_binop_rhs(&mut self,

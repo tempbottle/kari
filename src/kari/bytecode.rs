@@ -18,6 +18,7 @@ pub enum BytecodeInstr {
     PushInt(i32),
     PushBool(bool),
     PushStr(String),
+    PushList(u32),
     PushVar(String),
     PushRef(String),
     PushFunc(BlockId, u32),
@@ -55,6 +56,7 @@ impl fmt::Display for BytecodeInstr {
             &PushNil => write!(f, "PUSHNIL"),
             &PushInt(x) => write!(f, "PUSHINT {}", x),
             &PushStr(ref s) => write!(f, "PUSHSTR \"{}\"", s),
+            &PushList(nelements) => write!(f, "PUSHLIST {}", nelements),
             &PushBool(b) => write!(f, "PUSHBOOL {}", b),
             &PushVar(ref name) => write!(f, "PUSHVAR {}", name),
             &PushRef(ref name) => write!(f, "PUSHREF {}", name),
@@ -158,6 +160,10 @@ impl BytecodeBlock {
                     SetVar(read_string(len, r))
                 },
                 24 => While,
+                25 => {
+                    let len = r.read_u32::<BigEndian>().unwrap();
+                    PushList(len)
+                },
                 x => panic!("Unknown token {}", x)
             };
             instrs.push(PositionContainer(instr, pos));
@@ -253,6 +259,10 @@ impl BytecodeBlock {
                     write_string(name, w);
                 },
                 &While => w.write_u8(24).unwrap(),
+                &PushList(nelements) => {
+                    w.write_u8(25).unwrap();
+                    w.write_u32::<BigEndian>(nelements).unwrap();
+                }
             }
         }
     }
