@@ -6,6 +6,7 @@ pub enum Token {
     KeywordLet,
     KeywordIf,
     KeywordElse,
+    KeywordWhile,
     KeywordDef,
     KeywordFn,
     KeywordRef,
@@ -50,6 +51,7 @@ impl fmt::Display for Token {
             &KeywordLet => write!(f, "let"),
             &KeywordIf => write!(f, "if"),
             &KeywordElse => write!(f, "else"),
+            &KeywordWhile => write!(f, "while"),
             &KeywordDef => write!(f, "def"),
             &KeywordFn => write!(f, "fn"),
             &KeywordRef => write!(f, "ref"),
@@ -175,35 +177,18 @@ pub fn lex_source(source: String, file: Option<String>) -> Vec<TokenContainer> {
             else {
                 state = LexerState::Start;
                 tokens.push(PositionContainer(
-                    if &token[..] == "let" {
-                        Token::KeywordLet
-                    }
-                    else if &token[..] == "if" {
-                        Token::KeywordIf
-                    }
-                    else if &token[..] == "else" {
-                        Token::KeywordElse
-                    }
-                    else if &token[..] == "def" {
-                        Token::KeywordDef
-                    }
-                    else if &token[..] == "fn" {
-                        Token::KeywordFn
-                    }
-                    else if &token[..] == "ref" {
-                        Token::KeywordRef
-                    }
-                    else if &token[..] == "deref" {
-                        Token::KeywordDeref
-                    }
-                    else if &token[..] == "true" {
-                        Token::KeywordTrue
-                    }
-                    else if &token[..] == "false" {
-                        Token::KeywordFalse
-                    }
-                    else {
-                        Token::Ident(token.clone())
+                    match &token[..] {
+                        "let" => Token::KeywordLet,
+                        "if" => Token::KeywordIf,
+                        "else" => Token::KeywordElse,
+                        "while" => Token::KeywordWhile,
+                        "def" => Token::KeywordDef,
+                        "fn" => Token::KeywordFn,
+                        "ref" => Token::KeywordRef,
+                        "deref" => Token::KeywordDeref,
+                        "true" => Token::KeywordTrue,
+                        "false" => Token::KeywordFalse,
+                        _ => Token::Ident(token.clone())
                     }, range.clone()));
                 reset = true;
                 advance = false;

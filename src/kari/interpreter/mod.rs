@@ -116,6 +116,11 @@ impl Interpreter {
 
     pub fn traceback(&self) -> String {
         let mut ret = String::new();
+        ret.push_str(&format!("bytecode position {}:{}\n",
+                              self.current_block.0,
+                              self.instr_idx)[..]);
+        ret.push_str(&format!("current instruction {}\n",
+                              self.blocks[&self.current_block].instrs[self.instr_idx].0)[..]);
         ret.push_str(&format!("{}\n",
             self.blocks[&self.current_block].instrs[self.instr_idx].1)[..]);
         for &(block, instr, _) in self.call_stack.iter().rev() {
@@ -128,6 +133,14 @@ impl Interpreter {
         let mut ret = String::new();
         for &(ref name, id) in self.current_env.as_ref().unwrap().get_all_vars().iter() {
             ret.push_str(&format!("{}: {}\n", name, self.get_var(id).value)[..]);
+        }
+        ret
+    }
+
+    pub fn format_stack(&self) -> String {
+        let mut ret = String::new();
+        for value in self.stack.0.iter() {
+            ret.push_str(&format!("{}\n", value));
         }
         ret
     }
@@ -173,13 +186,13 @@ impl Interpreter {
     }
 
     fn jump(&mut self, id: BlockId) {
-        self.call_stack.push((self.current_block, self.instr_idx, self.current_env.clone()));
+        self.call_stack.push((self.current_block, self.instr_idx + 1, self.current_env.clone()));
         self.current_block = id;
         self.instr_idx = 0;
     }
 
     pub fn run_instr(&mut self) -> RuntimeResult<()> {
-        //println!("{} {:?}", self.blocks[&self.current_block].instrs[self.instr_idx].0, self.stack);
+        //println!("{}", self.blocks[&self.current_block].instrs[self.instr_idx].0);
         match self.blocks[&self.current_block].instrs[self.instr_idx].0.clone() {
             BytecodeInstr::Pop => {
                 try!(self.stack.pop());
@@ -202,13 +215,13 @@ impl Interpreter {
                 let (block, idx, env) = self.call_stack.pop().unwrap();
                 self.current_env = env;
                 self.current_block = block;
-                self.instr_idx = idx + 1;
+                self.instr_idx = idx;
                 self.gc_counter -= 1;
                 if self.gc_counter == 0 {
                     self.run_gc();
                     self.gc_counter = 10;
                 }
-                 return Ok(());
+                return Ok(());
             },
             BytecodeInstr::PushNil => self.stack.push(Value::Nil),
             BytecodeInstr::PushInt(x) => self.stack.push(Value::Integer(x)),
@@ -289,7 +302,24 @@ impl Interpreter {
                     self.jump(f);
                     return Ok(());
                 }
-            }
+            },
+            BytecodeInstr::While => {
+                let cond = match try!(self.stack.pop()) {
+                    Value::Boolean(cond) => cond,
+                    _ => return Err(RuntimeError::TypeMismatch)
+                };
+                if cond {
+                    self.call_stack.push(
+                        (self.current_block, 0, self.current_env.clone()));
+                }
+                else {
+                    let (block, idx, env) = self.call_stack.pop().unwrap();
+                    self.current_env = env;
+                    self.current_block = block;
+                    self.instr_idx = idx;
+                    return Ok(());
+                }
+            },
         }
         self.instr_idx += 1;
         Ok(())

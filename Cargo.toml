@@ -5,6 +5,7 @@ authors = ["Benjamin Lee <benjamin.fik.lee@gmail.com>"]
 
 [dependencies]
 clap = "*"
+byteorder = "*"
 
 [lib]
 name = "kari"

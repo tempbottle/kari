@@ -105,6 +105,7 @@ impl Parser {
             },
             &Token::KeywordLet => try!(self.parse_var_declaration()),
             &Token::KeywordIf => try!(self.parse_if_statement()),
+            &Token::KeywordWhile => try!(self.parse_while_loop()),
             &Token::KeywordDef => try!(self.parse_func_declaration()),
             &Token::KeywordFn => {
                 let tok = self.next();
@@ -245,6 +246,17 @@ impl Parser {
         };
         Ok(PositionContainer(
             Expression::If(Box::new(cond), t.0, f.map(|f| f.0)), range))
+    }
+
+    fn parse_while_loop(&mut self) -> ParserResult {
+        let tok = self.next(); //assume that this is 'while'
+        let cond = try!(self.parse_expression());
+        expect_lookahead!(self, "block after while _", {
+            &Token::LBrace => ()
+        });
+        let body = try!(self.parse_block());
+        let range = tok.1.extend_new(body.1.end.clone());
+        Ok(PositionContainer(Expression::While(Box::new(cond), body.0), range))
     }
 
     fn parse_func_call_args(&mut self) ->

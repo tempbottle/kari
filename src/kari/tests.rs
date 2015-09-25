@@ -61,3 +61,15 @@ fn references() {
     test_output(deref b);
     "#, Value::Integer(2));
 }
+
+#[test]
+fn while_loops() {
+    test_kari(r#"
+    let a := 10;
+    let b := 0;
+    while a > 0 {
+        b := b + 1;
+        a := a - 1;
+    }
+    test_output(b);"#, Value::Integer(10));
+}

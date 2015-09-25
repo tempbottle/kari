@@ -1,3 +1,5 @@
+extern crate byteorder;
+
 mod position;
 pub mod parser;
 pub mod lexer;

@@ -2,7 +2,7 @@ use interpreter::runtime_err::*;
 use interpreter::value::Value;
 
 #[derive(Clone)]
-pub struct Stack(Vec<Value>);
+pub struct Stack(pub Vec<Value>);
 
 impl Stack {
     pub fn new() -> Stack {

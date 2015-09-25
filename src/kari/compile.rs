@@ -154,6 +154,18 @@ impl Compiler {
                 };
                 instrs.push(PositionContainer(BytecodeInstr::If(t_id, f_id), pos.clone()));
             },
+            &PositionContainer(Expression::While(ref cond, ref body), ref pos) => {
+                let id = self.next_block_id;
+                self.next_block_id.0 += 1;
+                {
+                    let mut instrs = Vec::new();
+                    try!(self.compile_expr(&**cond, &mut instrs, blocks));
+                    instrs.push(PositionContainer(BytecodeInstr::While, cond.1.clone()));
+                    try!(self.compile_block(&*body, pos, &mut instrs, blocks));
+                    blocks.push(BytecodeBlock::new(id, instrs));
+                }
+                instrs.push(PositionContainer(BytecodeInstr::Jump(id), pos.clone()));
+            }
             &PositionContainer(Expression::Call(ref func, ref args), ref pos) => {
                 for arg in args.iter() {
                     try!(self.compile_expr(&*arg, instrs, blocks));

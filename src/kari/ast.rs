@@ -20,6 +20,7 @@ pub enum Expression {
     CompareLt(Box<ExpressionContainer>, Box<ExpressionContainer>),
     CompareGt(Box<ExpressionContainer>, Box<ExpressionContainer>),
     If(Box<ExpressionContainer>, Vec<ExpressionContainer>, Option<Vec<ExpressionContainer>>),
+    While(Box<ExpressionContainer>, Vec<ExpressionContainer>),
     Call(Box<ExpressionContainer>, Vec<ExpressionContainer>),
     Block(Vec<ExpressionContainer>),
 }
@@ -85,7 +86,7 @@ impl Expression {
                 let t_id = *next_node;
                 *next_node += 1;
                 out.push_str(&format!("{} [label=\"True\"];", t_id)[..]);
-                out.push_str(&format!("{} -> {};", id, t_id));
+                out.push_str(&format!("{} -> {};", id, t_id)[..]);
                 for expr in t.iter() {
                     let expr_id = expr.0.visualize_dot_render_node(next_node, out);
                     out.push_str(&format!("{} -> {};", t_id, expr_id));
@@ -99,6 +100,19 @@ impl Expression {
                         let expr_id = expr.0.visualize_dot_render_node(next_node, out);
                         out.push_str(&format!("{} -> {};", f_id, expr_id));
                     }
+                }
+            },
+            &While(ref cond, ref body) => {
+                out.push_str(&format!("{} [label=\"While\"];", id)[..]);
+                let cond_id = cond.0.visualize_dot_render_node(next_node, out);
+                out.push_str(&format!("{} -> {};", id, cond_id)[..]);
+                let body_id = *next_node;
+                *next_node += 1;
+                out.push_str(&format!("{} [label=\"Body\"];", body_id)[..]);
+                out.push_str(&format!("{} -> {};", id, body_id)[..]);
+                for expr in body.iter() {
+                    let expr_id = expr.0.visualize_dot_render_node(next_node, out);
+                    out.push_str(&format!("{} -> {};", body_id, expr_id)[..]);
                 }
             },
             &Call(ref func, ref args) => {
