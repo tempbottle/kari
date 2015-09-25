@@ -215,6 +215,12 @@ impl Interpreter {
                         self.jump(id);
                         return Ok(());
                     },
+                    Value::List(es) => {
+                        match try!(self.stack.pop()) {
+                            Value::Integer(idx) => self.stack.push(es[idx as usize].clone()),
+                            _ => return Err(RuntimeError::TypeMismatch)
+                        }
+                    }
                     Value::HostFunction(ref f) => try!(f(self)),
                     _ => return Err(RuntimeError::TypeMismatch)
                 }
