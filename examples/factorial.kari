@@ -9,9 +9,8 @@ def factorial1(x) {
 
 def factorial2(x) {
     let accum := 1;
-    while x > 0 {
-        accum := accum * x;
-        x := x - 1;
+    for i : (1, x + 1) {
+        accum := accum * i;
     }
     accum
 }

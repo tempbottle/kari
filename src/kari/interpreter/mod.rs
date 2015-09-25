@@ -81,7 +81,8 @@ impl Variable {
                 match &instr.0 {
                     &BytecodeInstr::PushVar(ref name) => if let Ok(id) = self.env.lookup(name) {
                         vars.push(id);
-                    },
+                    }
+,
                     &BytecodeInstr::PushRef(ref name) => if let Ok(id) = self.env.lookup(name) {
                         vars.push(id);
                     },

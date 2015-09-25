@@ -87,6 +87,14 @@ impl Parser {
                 let (exprs, range) = try!(self.parse_block());
                 PositionContainer(Expression::Block(exprs), range)
             },
+            &Token::LParen => {
+                self.next();
+                let expr = try!(self.parse_expression());
+                expect!(self, "close parenthesis", {
+                    PositionContainer(Token::RParen, _) => ()
+                });
+                expr
+            }
             &Token::KeywordRef => {
                 let mut range = self.next().1;
                 let expr = try!(self.parse_expression());
@@ -106,6 +114,7 @@ impl Parser {
             &Token::KeywordLet => try!(self.parse_var_declaration()),
             &Token::KeywordIf => try!(self.parse_if_statement()),
             &Token::KeywordWhile => try!(self.parse_while_loop()),
+            &Token::KeywordFor => try!(self.parse_for_loop()),
             &Token::KeywordDef => try!(self.parse_func_declaration()),
             &Token::KeywordFn => {
                 let tok = self.next();
@@ -257,6 +266,52 @@ impl Parser {
         let body = try!(self.parse_block());
         let range = tok.1.extend_new(body.1.end.clone());
         Ok(PositionContainer(Expression::While(Box::new(cond), body.0), range))
+    }
+
+    fn parse_for_loop(&mut self) -> ParserResult {
+        let tok = self.next(); //assume that this is 'for'
+        let var = expect!(self, "identifier after for", {
+            PositionContainer(Token::Ident(var), _) => var
+        });
+        expect!(self, "colon after for _", {
+            PositionContainer(Token::Colon, _) => ()
+        });
+        expect!(self, "open parenthesis", {
+            PositionContainer(Token::LParen, _) => ()
+        });
+        let low = try!(self.parse_expression());
+        expect!(self, "comma", {
+            PositionContainer(Token::Comma, _) => ()
+        });
+        let high = try!(self.parse_expression());
+        expect!(self, "close parenthesis", {
+            PositionContainer(Token::RParen, _) => ()
+        });
+        expect_lookahead!(self, "block after for _", {
+            &Token::LBrace => ()
+        });
+        let mut body = try!(self.parse_block());
+        let range = tok.1.extend_new(body.1.end.clone());
+        let mut exprs = Vec::new();
+        body.0.push(PositionContainer(Expression::Assignment(
+            Box::new(PositionContainer(Expression::Variable(var.clone()), range.clone())),
+            Box::new(PositionContainer(Expression::Add(
+                Box::new(PositionContainer(Expression::Variable(var.clone()), range.clone())),
+                Box::new(PositionContainer(Expression::Integer(1), range.clone())),
+            ), range.clone()))), range.clone()));
+        exprs.push(PositionContainer(
+            Expression::Statement(Box::new(PositionContainer(
+                Expression::VarDeclaration(var.clone(), Box::new(low)), range.clone()))),
+            range.clone()));
+        exprs.push(PositionContainer(
+            Expression::While(Box::new(PositionContainer(
+                Expression::CompareLt(
+                    Box::new(PositionContainer(
+                        Expression::Variable(var.clone()), range.clone())),
+                    Box::new(high)),
+                range.clone())), body.0), range.clone()));
+
+        Ok(PositionContainer(Expression::Block(exprs), range.clone()))
     }
 
     fn parse_func_call_args(&mut self) ->

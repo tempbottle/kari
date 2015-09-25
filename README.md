@@ -5,24 +5,30 @@ Kari is a programming language designed to be embedded in Rust programs and the 
 ## Example
 It doesn't do much yet but here is a simple example:
 ```
-def f(x) {
-    x + 1
+def factorial1(x) {
+    if x = 1 {
+        1
+    }
+    else {
+        factorial1(x - 1) * x
+    }
 }
 
-let a := f(1)
-let b := a / 10
-let c := a * b + 1 / 2
+def factorial2(x) {
+    let accum := 1;
+    for i : (0, x) {
+        accum := accum * x;
+    }
+    accum
+}
 
-if a = b {
-    let b := a
-}
-else {
-    let b := c
-}
+print(factorial1(10));
+print(factorial2(10));
 ```
 
 ## Features
  - Scripts can be compiled to bytecode once and then loaded at runtime, skipping the overhead from compiling and optimizing
+ - Simple garbage collection
 
 ## Goals
 

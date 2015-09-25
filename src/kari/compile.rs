@@ -165,7 +165,7 @@ impl Compiler {
                     blocks.push(BytecodeBlock::new(id, instrs));
                 }
                 instrs.push(PositionContainer(BytecodeInstr::Jump(id), pos.clone()));
-            }
+            },
             &PositionContainer(Expression::Call(ref func, ref args), ref pos) => {
                 for arg in args.iter() {
                     try!(self.compile_expr(&*arg, instrs, blocks));
@@ -176,6 +176,7 @@ impl Compiler {
             &PositionContainer(Expression::Block(ref exprs), ref pos) => {
                 let id = self.next_block_id;
                 self.next_block_id.0 += 1;
+                instrs.push(PositionContainer(BytecodeInstr::Jump(id), pos.clone()));
                 let mut instrs = Vec::new();
                 try!(self.compile_block(exprs, pos, &mut instrs, blocks));
                 blocks.push(BytecodeBlock::new(id, instrs));
@@ -188,7 +189,6 @@ impl Compiler {
 pub fn compile_ast(expr: ExpressionContainer) -> CompileResult<Vec<BytecodeBlock>> {
     let mut instrs = Vec::new();
     let mut blocks = Vec::new();
-    instrs.push(PositionContainer(BytecodeInstr::Jump(BlockId(1)), expr.1.clone()));
     try!(Compiler::new().compile_expr(&expr, &mut instrs, &mut blocks));
     blocks.push(BytecodeBlock::new(BlockId(0), instrs));
     Ok(blocks)
